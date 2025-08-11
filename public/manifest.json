@@ -1,0 +1,9 @@
+
+{
+  "short_name": "MyWebApp",
+  "name": "수능메이트",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff"
+}

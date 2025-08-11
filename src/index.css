@@ -1,0 +1,224 @@
+/* Noto Sans KR 폰트 import */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+
+/* Tailwind CSS 기본 지시어 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- 테마 및 색상 변수 정의 --- */
+:root {
+  /* 폰트 및 안전 영역 변수 */
+  --font-family-primary: 'Noto Sans KR', sans-serif;
+  --safe-top: max(env(safe-area-inset-top), 1rem);
+  --safe-bottom: max(env(safe-area-inset-bottom), 1rem);
+  --safe-left: max(env(safe-area-inset-left), 1rem);
+  --safe-right: max(env(safe-area-inset-right), 1rem);
+
+  /* --- 1. 미니멀 라이트 테마 (기본값) --- */
+  --background: #F5F5F5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --card-background: rgba(255, 255, 255);
+  --card-border: #e5e7eb;
+  --highlight-primary: #333333;
+  --highlight-primary-text: #FFFFFF;
+  --highlight-secondary: #5a5a5a; /* 미니멀 라이트용 2차 하이라이트 */
+  --indicator-active: #333333;
+  --indicator-inactive: #cccccc;
+  --neumorphic-bg: #e0e5ec;
+  --neumorphic-text: #555555;
+  --neumorphic-shadow-light: #ffffff;
+  --neumorphic-shadow-dark: #a3b1c6;
+}
+
+/* --- 2. 화려한(Vibrant) 라이트 테마 --- */
+[data-theme-style="vibrant"] {
+  --background: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%);
+  --highlight-primary: linear-gradient(145deg, rgb(85, 163, 194), rgb(65, 143, 174));
+  --highlight-secondary: linear-gradient(145deg, rgb(65, 143, 174), rgb(45, 123, 154)); /* 화려한 라이트용 2차 하이라이트 */
+}
+
+/* --- 3. 미니멀 다크(Dark) 모드 --- */
+[data-theme-mode="dark"] {
+  --background: #121212;
+  --text-primary: #FFFFFF;
+  --text-secondary: #a1a1aa;
+  --card-background: rgba(30, 30, 30);
+  --card-border: rgba(128, 128, 128, 0.2);
+  --highlight-primary: #EEEEEE;
+  --highlight-primary-text: #111111;
+  --highlight-secondary: #cccccc; /* 미니멀 다크용 2차 하이라이트 */
+  --indicator-active: #FFFFFF;
+  --indicator-inactive: rgba(255, 255, 255, 0.4);
+  --neumorphic-bg: #3E3E3E;
+  --neumorphic-text: #E0E0E0;
+  --neumorphic-shadow-light: #525252;
+  --neumorphic-shadow-dark: #2a2a2a;
+}
+
+/* --- 4. 화려한 다크 --- */
+[data-theme-style="vibrant"][data-theme-mode="dark"] {
+  --background: linear-gradient(180deg, #000000 0%, #000000 20%, #4A1A7B 100%);
+  --highlight-primary: linear-gradient(145deg, rgb(253, 182, 79), rgb(233, 162, 59));
+  --highlight-primary-text: #FFFFFF;
+  --highlight-secondary: linear-gradient(145deg, rgb(144, 112, 181), rgb(124, 92, 161));
+  --highlight-secondary-text: #FFFFFF;
+}
+
+/* --- 공통 레이아웃 및 컴포넌트 스타일 --- */
+body {
+  font-family: var(--font-family-primary);
+}
+
+.page-layout {
+  background: var(--background);
+  transition: background 0.5s ease-in-out;
+}
+
+.welcome-container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); gap: 4vh; }
+.main-content-area { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 1vh; }
+.logo-card { width: 80px; height: 80px; margin-bottom: 3vh; background-color: var(--card-background); border: 1px solid var(--card-border); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+.title-text { color: var(--text-primary); font-size: 1.8rem; font-weight: 700; }
+.description-text { color: var(--text-secondary); font-size: 1rem; margin-bottom: 4vh; }
+.actions-panel { width: 100%; padding: 24px; border-radius: 20px; background-color: var(--card-background); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+.carousel-text { height: 32px; color: var(--text-secondary); font-size: 0.875rem; }
+.indicator { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s; background-color: var(--indicator-inactive); opacity: 0.5; }
+.indicator.active { background-color: var(--indicator-active); opacity: 1; }
+
+/* --- 버튼 스타일 --- */
+.primary-button {
+  width: 100%;
+  padding: 12px 20px;
+  
+  border-radius: 12px;
+  /* 이제 로그인 버튼은 항상 2차 하이라이트 색상을 사용합니다. */
+  background: var(--highlight-secondary, var(--highlight-primary));
+  color: var(--highlight-secondary-text, var(--highlight-primary-text));
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+.primary-button:active {
+  transform: scale(0.98); /* 눌리는 효과 */
+}
+
+.secondary-button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease-in-out;
+  /* 보조 버튼은 항상 패널 색상을 사용합니다. */
+  background-color: var(--card-background);
+  color: var(--text-secondary);
+}
+
+.secondary-button:active {
+  box-shadow: inset 2px 2px 5px var(--neumorphic-shadow-dark), inset -2px -2px 5px var(--neumorphic-shadow-light);
+  transform: translateY(1px);
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .welcome-container { flex-direction: row; gap: 4vw; }
+  .main-content-area, .branding-area { width: 50%; }
+}
+
+.title-text {
+  color: var(--text-primary);
+  font-size: 2rem; /* 기본 데스크탑 폰트 크기 */
+  font-weight: 700;
+}
+
+.description-text {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin-bottom: 1rem; /* 여백 조정 */
+}
+
+/* 로그인 CSS */
+.login-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.login-content-area {
+  width: 100%;
+  max-width: 480px; /* 최대 너비 조정 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.login-input {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--card-border);
+  background-color: var(--card-background);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+
+.password-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* 비밀번호 찾기 링크를 오른쪽으로 */
+  gap: 0.5rem;
+}
+.password-toggle-button {
+  position: absolute;
+  right: 1rem;
+  /* 입력창 높이의 중간에 오도록 조정 */
+  top: 1rem; 
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.forgot-password-link {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.signup-button {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--button-secondary-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.guest-link {
+  font-size: 0.875rem;
+  color: var(--button-tertiary-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- 반응형 폰트 사이즈 --- */
+@media (max-width: 768px) {
+  .title-text { font-size: 1.8rem; }
+  .description-text { font-size: 0.9rem; }
+}
