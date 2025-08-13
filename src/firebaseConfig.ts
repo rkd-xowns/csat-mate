@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // 인증과 데이터베이스 객체를 export 합니다.
 export const auth = getAuth(app);

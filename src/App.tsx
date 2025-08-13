@@ -14,6 +14,7 @@ import { PageLayout } from './components/PageLayout';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ProtectedRoute } from './components/ProtectedRoute'; // 문지기 import
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { PwaFeatureTester } from './pages/PwaFeatureTester';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -52,7 +53,7 @@ function App() {
           <Route path="/login" element={<LoginPage setSignupUsername={setSignupUsername} />} />
           <Route path="/signup" element={<SignupPage setSignupUsername={setSignupUsername} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          
+           <Route path="/pwa-test" element={<PwaFeatureTester />} />
 
           {/* --- 로그인해야만 접근 가능한 보호된 경로 --- */}
           <Route element={<ProtectedRoute user={user} />}>

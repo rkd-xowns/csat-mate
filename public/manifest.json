@@ -1,9 +1,30 @@
-
 {
-  "short_name": "MyWebApp",
+  "short_name": "수능메이트",
   "name": "수능메이트",
-  "start_url": ".",
+  "description": "수능 준비를 위한 스마트 학습 도구",
+  "icons": [
+    {
+      "src": "/icons/192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#007bff",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#121212",
+  "background_color": "#121212",
+  "gcm_sender_id": "103953800507",
+  "categories": ["education", "productivity"],
+  "lang": "ko",
+  "dir": "ltr",
+  "prefer_related_applications": false
 }

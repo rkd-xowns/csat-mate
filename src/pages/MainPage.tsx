@@ -22,11 +22,31 @@ export function MainPage() {
     : `${user?.email || '사용자'}님, 환영합니다!`;
 
   return (
-    <div>
-      <h1>메인 페이지</h1>
-      <p>{welcomeMessage}</p>
-      <hr />
-      <button onClick={handleLogout}>로그아웃</button>
+    <div className="page-layout login-container justify-center">
+      <div className="login-content-area max-w-lg flex flex-col items-center gap-4">
+        <div className="text-center">
+          <h1 className="title-text">메인 페이지</h1>
+          <p>{welcomeMessage}</p>
+        </div>
+
+        <div className="actions-panel w-full flex flex-col gap-4">
+          {/* PWA 테스트 페이지로 이동하는 버튼 */}
+          <button
+            onClick={() => navigate('/pwa-test')}
+            className="secondary-button"
+          >
+            PWA 기능 테스트 페이지로 이동
+          </button>
+
+          {/* 로그아웃 버튼 */}
+          <button
+            onClick={handleLogout}
+            className="primary-button mb-0"
+          >
+            로그아웃
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
