@@ -15,6 +15,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ProtectedRoute } from './components/ProtectedRoute'; // 문지기 import
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PwaFeatureTester } from './pages/PwaFeatureTester';
+import { AuthRedirector } from './components/AuthRedirector';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -48,12 +49,16 @@ function App() {
           onClose={() => setIsSettingsOpen(false)}
         />
         <Routes>
+          <Route path="/" element={<AuthRedirector user={user} />} />
+
           {/* --- 누구나 접근 가능한 경로 --- */}
-          <Route path="/" element={<WelcomePage />} />
+
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/login" element={<LoginPage setSignupUsername={setSignupUsername} />} />
           <Route path="/signup" element={<SignupPage setSignupUsername={setSignupUsername} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
            <Route path="/pwa-test" element={<PwaFeatureTester />} />
+           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* --- 로그인해야만 접근 가능한 보호된 경로 --- */}
           <Route element={<ProtectedRoute user={user} />}>
@@ -61,7 +66,6 @@ function App() {
               path="/profile-setup" 
               element={<ProfileSetupPage signupUsername={signupUsername} />} 
             />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/main" element={<MainPage />} />
             {/* 나중에 추가될 다른 보호된 페이지들 (예: 마이페이지) */}
           </Route>

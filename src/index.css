@@ -37,6 +37,8 @@
   --background: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 50%, #90CAF9 100%);
   --highlight-primary: linear-gradient(145deg, rgb(85, 163, 194), rgb(65, 143, 174));
   --highlight-secondary: linear-gradient(145deg, rgb(65, 143, 174), rgb(45, 123, 154)); /* 화려한 라이트용 2차 하이라이트 */
+  --highlight-primary-simple:rgb(65, 143, 174);
+  --highlight-secondary-simple: rgb(65, 143, 174);
 }
 
 /* --- 3. 미니멀 다크(Dark) 모드 --- */
@@ -64,6 +66,8 @@
   --highlight-primary-text: #FFFFFF;
   --highlight-secondary: linear-gradient(145deg, rgb(144, 112, 181), rgb(124, 92, 161));
   --highlight-secondary-text: #FFFFFF;
+  --highlight-primary-simple: rgb(233, 162, 59);
+  --highlight-secondary-simple: rgb(124, 92, 161);
 }
 
 /* --- 공통 레이아웃 및 컴포넌트 스타일 --- */
@@ -170,6 +174,25 @@ body {
   font-size: 1rem;
 }
 
+.login-input:focus {
+  /* 원하는 포커스 색상으로 변경하세요 */
+  border-color: var(--highlight-secondary-simple); 
+  /* 클릭 시 브라우저가 기본으로 추가하는 outline 스타일을 제거합니다 */
+  outline: none; 
+}
+
+.login-input.error {
+  border-color: #ef4444; /* Tailwind의 red-500 색상입니다. */
+}
+
+.error-message {
+  color: #ef4444; /* Tailwind CSS의 red-500 색상 */
+  font-size: 0.875rem; /* text-sm */
+  text-align: center; /* text-center */
+  margin-top: -0.5rem; /* -my-2 */
+  margin-bottom: -0.5rem; /* -my-2 */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; /* animate-pulse */
+}
 
 .password-wrapper {
   position: relative;
@@ -197,6 +220,12 @@ body {
   cursor: pointer;
   padding: 0;
 }
+
+.forgot-password-link.error {
+  color: #ef4444; /* Tailwind red-500 색상 */
+  text-decoration: underline; /* 에러 상태일 때 더 강조하고 싶다면 밑줄을 추가할 수 있습니다. */
+}
+
 .signup-button {
   width: 100%;
   padding: 1rem;

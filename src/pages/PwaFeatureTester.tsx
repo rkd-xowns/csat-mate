@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { requestPermissionAndGetToken, checkBrowserCompatibility } from '../utils/firebaseMessaging';
+// [수정] 이제 통합된 usePwaFeatures 훅에서 모든 기능을 가져옵니다.
+import { usePwaFeatures } from '../hooks/usePwaFeatures'; 
 import { auth, db } from '../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
-// Tone.js는 index.html의 script 태그로 불러오므로, 타입 선언만 해줍니다.
-declare const Tone: any;
+
+// [추가] NotificationOptions에 vibrate 속성을 포함하는 타입을 정의합니다.
+interface CustomNotificationOptions extends NotificationOptions {
+  badge?: string;
+  vibrate?: VibratePattern;
+}
 
 const isIOS = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -24,38 +29,23 @@ export const PwaFeatureTester: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const cameraStreamRef = useRef<MediaStream | null>(null);
 
-  // --- [신규] 오디오 기능 상태 및 ref ---
-  const [isAudioReady, setIsAudioReady] = useState(false);
-  const [isWhiteNoisePlaying, setIsWhiteNoisePlaying] = useState(false);
-  const noiseSynth = useRef<any>(null);
-  const alertSynth = useRef<any>(null);
-
-  // Tone.js 오디오 컨텍스트를 초기화하는 함수 (사용자 클릭 시 호출)
-  const initializeAudio = async () => {
-    if (isAudioReady || typeof Tone === 'undefined') return;
-    
-    await Tone.start();
-    noiseSynth.current = new Tone.NoiseSynth({
-      noise: { type: 'pink' },
-      envelope: { attack: 1, sustain: 1, release: 1 },
-      volume: -25,
-    }).toDestination();
-    
-    alertSynth.current = new Tone.Synth().toDestination();
-    
-    setIsAudioReady(true);
-    console.log("Audio context started");
-  };
+  // [수정] 통합된 훅을 호출합니다.
+  const { 
+    requestPermissionAndGetToken, 
+    checkBrowserCompatibility,
+    triggerHapticFeedback,
+    requestWakeLock,
+    releaseWakeLock,
+    startCamera,
+    stopCamera
+  } = usePwaFeatures();
 
   useEffect(() => {
     const initializeApp = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-          console.log('Service Worker 등록 성공:', registration.scope);
+          await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
         } catch (err) {
           console.error('Service Worker 등록 실패:', err);
         }
@@ -70,7 +60,7 @@ export const PwaFeatureTester: React.FC = () => {
       }
     };
     initializeApp();
-  }, []);
+  }, [checkBrowserCompatibility]); // useEffect의 의존성 배열에 훅 함수 추가
 
   const handleGetTokenClick = async () => {
     setIsLoading(true);
@@ -80,23 +70,11 @@ export const PwaFeatureTester: React.FC = () => {
       if (token) {
         setFcmToken(token);
         const isSafariBrowser = browserInfo?.browser?.isSafari;
-        setStatusMessage(isSafariBrowser ? "Safari 푸시 구독 성공! (Web Push API 사용)" : "FCM 토큰 발급 성공!");
+        setStatusMessage(isSafariBrowser ? "Safari 푸시 구독 성공!" : "FCM 토큰 발급 성공!");
         if (auth.currentUser) {
-          try {
-            const userTokenRef = doc(db, "fcmTokens", auth.currentUser.uid);
-            await setDoc(userTokenRef, { 
-              token, 
-              uid: auth.currentUser.uid,
-              createdAt: new Date(),
-              userAgent: navigator.userAgent,
-              browser: browserInfo?.browser,
-              type: isSafariBrowser ? 'safari-webpush' : 'fcm'
-            });
-            setStatusMessage(isSafariBrowser ? "Safari 푸시 구독 및 서버 저장 성공!" : "FCM 토큰 발급 및 서버 저장 성공!");
-          } catch (error) {
-            console.error("Firestore 저장 오류:", error);
-            setStatusMessage("토큰은 발급되었으나 서버 저장에 실패했습니다.");
-          }
+          const userTokenRef = doc(db, "fcmTokens", auth.currentUser.uid);
+          await setDoc(userTokenRef, { token, uid: auth.currentUser.uid, createdAt: new Date(), userAgent: navigator.userAgent, browser: browserInfo?.browser, type: isSafariBrowser ? 'safari-webpush' : 'fcm' });
+          setStatusMessage(isSafariBrowser ? "Safari 푸시 구독 및 서버 저장 성공!" : "FCM 토큰 발급 및 서버 저장 성공!");
         } else {
           setStatusMessage(isSafariBrowser ? "Safari 푸시 구독 성공! (로그인하지 않음)" : "FCM 토큰 발급 성공! (로그인하지 않음)");
         }
@@ -116,80 +94,37 @@ export const PwaFeatureTester: React.FC = () => {
     }
   };
 
-  const triggerHapticFeedback = useCallback((pattern: VibratePattern = 200) => {
-    if ('vibrate' in navigator) navigator.vibrate(pattern);
-    else alert("이 기기는 햅틱 피드백을 지원하지 않습니다.");
-  }, []);
-
-  const requestWakeLock = useCallback(async () => {
-    if ('wakeLock' in navigator) {
-      try {
-        wakeLockRef.current = await navigator.wakeLock.request('screen');
-        alert('화면 켜짐 유지가 활성화되었습니다.');
-        wakeLockRef.current.addEventListener('release', () => console.log('Screen Wake Lock was released.'));
-      } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`);
-        alert('화면 켜짐 유지를 활성화할 수 없습니다.');
-      }
-    } else alert("이 기기는 화면 켜짐 유지를 지원하지 않습니다.");
-  }, []);
-
-  const releaseWakeLock = useCallback(async () => {
-    if (wakeLockRef.current) {
-      await wakeLockRef.current.release();
-      wakeLockRef.current = null;
-      alert('화면 켜짐 유지가 비활성화되었습니다.');
+  // [추가] 1분 뒤 알림 예약 핸들러
+  const handleScheduleNotification = async () => {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+      return alert("이 브라우저는 알림을 지원하지 않습니다.");
     }
-  }, []);
-
-  const startCamera = useCallback(async (videoElement: HTMLVideoElement | null) => {
-    if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices && videoElement) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        videoElement.srcObject = stream;
-        videoElement.style.display = 'block';
-        videoElement.play();
-        cameraStreamRef.current = stream;
-      } catch (err: any) {
-        console.error(`Camera access error: ${err.name}, ${err.message}`);
-        alert('카메라에 접근할 수 없습니다.');
-      }
-    } else alert("이 기기는 카메라 접근을 지원하지 않습니다.");
-  }, []);
-
-  const stopCamera = useCallback(() => {
-    if (cameraStreamRef.current) {
-      cameraStreamRef.current.getTracks().forEach(track => track.stop());
-      cameraStreamRef.current = null;
-      if (videoRef.current) videoRef.current.style.display = 'none';
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      return alert("알림 권한이 필요합니다.");
     }
-  }, []);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      setTimeout(() => {
+        const notificationOptions: CustomNotificationOptions = {
+          body: "1분 전에 예약된 알림입니다.",
+          icon: "/icon-192x192.png",
+          badge: "/icon-192x192.png",
+          vibrate: [200, 100, 200],
+        };
+        registration.showNotification("⏰ 1분 타이머 종료!", notificationOptions);
+      }, 60000); // 1분 = 60000 밀리초
+      alert("1분 뒤 알림이 예약되었습니다. 앱을 백그라운드로 보내거나 화면을 꺼도 알림이 울립니다.");
+    } catch (error) {
+      console.error("알림 예약 실패:", error);
+      alert("알림 예약에 실패했습니다.");
+    }
+  };
 
   const copyBrowserInfo = () => {
     if (browserInfo) {
       const info = JSON.stringify(browserInfo, null, 2);
       navigator.clipboard.writeText(info).then(() => alert('브라우저 정보가 클립보드에 복사되었습니다.')).catch(() => console.log('브라우저 정보:', info));
-    }
-  };
-
-  // --- [신규] 오디오 제어 핸들러 ---
-  const handleToggleWhiteNoise = async () => {
-    if (!isAudioReady) await initializeAudio();
-    if (noiseSynth.current) {
-      if (isWhiteNoisePlaying) {
-        noiseSynth.current.triggerRelease();
-        setIsWhiteNoisePlaying(false);
-      } else {
-        noiseSynth.current.triggerAttack();
-        setIsWhiteNoisePlaying(true);
-      }
-    }
-  };
-
-  const handlePlayAlertSound = async () => {
-    if (!isAudioReady) await initializeAudio();
-    if (alertSynth.current) {
-      alertSynth.current.triggerAttackRelease("C5", "8n");
     }
   };
 
@@ -214,7 +149,6 @@ export const PwaFeatureTester: React.FC = () => {
               <div>FCM 지원: {browserInfo.fcmSupported ? '✅' : '❌'}</div>
               <div>HTTPS: {browserInfo.https ? '✅' : '❌'}</div>
               <div>Safari: {browserInfo.browser.isSafari ? '✅' : '❌'}</div>
-              <div>Brave: {browserInfo.browser.isBrave ? '✅' : '❌'}</div>
               <div>iOS: {browserInfo.browser.isIOSDevice ? '✅' : '❌'}</div>
               <div>PWA 모드: {browserInfo.browser.isStandalone ? '✅' : '❌'}</div>
             </div>
@@ -234,10 +168,16 @@ export const PwaFeatureTester: React.FC = () => {
         ) : (
           <div className="actions-panel w-full flex flex-col gap-4">
             <button onClick={handleGetTokenClick} disabled={isLoading} className="primary-button mb-0">{isLoading ? '처리 중...' : '알림 권한 요청 및 토큰 발급'}</button>
+            
+            <button onClick={handleScheduleNotification} className="secondary-button">
+              1분 뒤 알림 예약하기
+            </button>
+
             <div className="text-center p-4 rounded-lg" style={{backgroundColor: 'var(--card-border)'}}>
               <p className="text-sm font-medium" style={{color: 'var(--text-secondary)'}}>상태</p>
               <p className="font-bold" style={{color: 'var(--text-primary)'}}>{statusMessage}</p>
             </div>
+            
             {fcmToken && (
               <div className="text-left p-4 rounded-lg" style={{backgroundColor: 'var(--card-border)', wordBreak: 'break-all'}}>
                 <div className="flex justify-between items-center mb-2">
@@ -249,15 +189,6 @@ export const PwaFeatureTester: React.FC = () => {
               </div>
             )}
             
-            {/* [신규] 오디오 제어 버튼 추가 */}
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t" style={{borderColor: 'var(--card-border)'}}></div>
-              <span className="flex-shrink mx-2 text-xs" style={{color: 'var(--text-secondary)'}}>오디오 기능</span>
-              <div className="flex-grow border-t" style={{borderColor: 'var(--card-border)'}}></div>
-            </div>
-            <button onClick={handleToggleWhiteNoise} className="secondary-button">{isWhiteNoisePlaying ? '배경 소음 끄기 🔇' : '배경 소음 켜기 🔊'}</button>
-            <button onClick={handlePlayAlertSound} className="secondary-button">알림음 재생 🔔</button>
-
             <button onClick={() => triggerHapticFeedback([100, 50, 100])} className="secondary-button">햅틱 피드백 (진동)</button>
             <div className="flex gap-2">
               <button onClick={requestWakeLock} className="secondary-button flex-1">화면 켜짐 유지 시작</button>
