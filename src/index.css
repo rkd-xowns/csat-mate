@@ -162,7 +162,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 .login-input {
   width: 100%;
@@ -186,7 +186,7 @@ body {
 }
 
 .error-message {
-  color: #ef4444; /* Tailwind CSS의 red-500 색상 */
+  color: #ef4444; /* Tailwind CSS의 red-500 색상 (각 UI 별로 알맞은 경고 색상 추가) */ 
   font-size: 0.875rem; /* text-sm */
   text-align: center; /* text-center */
   margin-top: -0.5rem; /* -my-2 */
@@ -203,15 +203,27 @@ body {
   gap: 0.5rem;
 }
 .password-toggle-button {
-  position: absolute;
-  right: 1rem;
-  /* 입력창 높이의 중간에 오도록 조정 */
-  top: 1rem; 
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
+ position: absolute;
+ top: 0;
+ right: 0.75rem; /* 적절한 간격 유지 */
+ bottom: 0; /* 추가 */
+ display: flex;
+ align-items: center; /* 세로 중앙 정렬 */
+ height: auto; /* auto로 변경하거나 제거 */
+ margin: auto 0; /* 상하 마진을 auto로 설정하여 중앙 정렬 */
+ padding: 0.5rem; /* 필요에 따라 패딩 조정 */
+ background: none; /* 배경색 제거 (선택 사항) */
+ border: none; /* 테두리 제거 */
+ cursor: pointer;
+ outline: none; /* 포커스 스타일 제거 (선택 사항) */
+ /* SVG 아이콘 스타일 */
 }
+
+.password-toggle-button svg {
+  stroke: var(--text-secondary); /* 아이콘의 선 색상을 2차 텍스트 색상으로 설정 */
+  transition: stroke 0.2s ease-in-out; /* 색상 변경 시 부드러운 전환 효과 */
+}
+
 .forgot-password-link {
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -225,6 +237,7 @@ body {
   color: #ef4444; /* Tailwind red-500 색상 */
   text-decoration: underline; /* 에러 상태일 때 더 강조하고 싶다면 밑줄을 추가할 수 있습니다. */
 }
+
 
 .signup-button {
   width: 100%;
@@ -246,8 +259,55 @@ body {
   text-decoration: underline;
 }
 
+/* Signup CSS*/
+
+.input-adjacent-button {
+  /* 가로폭 자동 조절을 위해 flex: 1 속성 제거 */
+  flex-shrink: 0; /* 버튼 크기가 줄어들지 않도록 설정 */
+  white-space: nowrap; /* 버튼 내 텍스트가 줄바꿈되지 않도록 설정 */
+  
+  /* 세로 높이를 login-input과 맞추기 위해 padding-top/bottom을 1rem으로 설정 */
+  padding: 1rem 1.25rem;
+  
+  /* 나머지 스타일은 secondary-button과 동일하게 유지 */
+  border-radius: 0.75rem; /* login-input과 동일한 값 */
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  border: 1px solid var(--card-border);
+  background-color: var(--card-background);
+  color: var(--text-secondary);
+  transition: all 0.2s ease-in-out;
+}
+
+/* 비활성화 상태일 때 스타일 */
+.input-adjacent-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* --- 반응형 폰트 사이즈 --- */
 @media (max-width: 768px) {
   .title-text { font-size: 1.8rem; }
   .description-text { font-size: 0.9rem; }
+}
+
+.form-bottom-link {
+  color: var(--text-secondary);
+  font-size: 0.875rem; /* 14px */
+  font-weight: 400; /* normal */
+  text-align: center;
+  margin-top: 0.5rem; /* 8px */
+  align-self: center;
+}
+
+.form-bottom-link button {
+  color: var(--highlight-secondary-simple); /* 테마에 맞는 하이라이트 색상 적용 */
+  font-weight: 500; /* medium */
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit; /* 부모 <p> 태그의 폰트 크기 상속 */
+  padding: 0;
+  vertical-align: baseline; /* 다른 텍스트와 정렬 맞춤 */
 }
