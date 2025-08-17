@@ -1,45 +1,62 @@
-import { onSchedule } from "firebase-functions/v2/scheduler"; // v2 스케줄러 import
+// functions/src/index.ts
+
+import { onSchedule, ScheduledEvent } from "firebase-functions/v2/scheduler";
+import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
-import { logger } from "firebase-functions"; // v2 로거 import
 
 admin.initializeApp();
 
-// 최신 v2 문법인 onSchedule을 사용합니다.
-export const cleanupGuestAccounts = onSchedule("every day 03:00", async (event) => {
-    const INACTIVE_THRESHOLD_DAYS = 30;
-    const now = new Date();
-    const inactiveDate = new Date(now.setDate(now.getDate() - INACTIVE_THRESHOLD_DAYS));
-    
-    logger.info(`Searching for inactive guest accounts created before ${inactiveDate.toISOString()}...`);
+export const cleanupInactiveUsers = onSchedule({
+  schedule: "0 3 * * *",
+  timeZone: "Asia/Seoul",
+  region: "asia-northeast3",
+}, async (event: ScheduledEvent) => {
+  logger.log("Starting inactive and unverified users cleanup job.");
 
-    try {
-      const listUsersResult = await admin.auth().listUsers(1000);
-      
-      const usersToDelete: string[] = [];
+  const unverifiedThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const guestInactiveThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  let uidsToDelete: string[] = [];
+  let pageToken;
+
+  try {
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, pageToken);
       
       listUsersResult.users.forEach((user) => {
-        // 사용자가 익명(게스트) 계정인지 확인합니다.
-        if (user.providerData.length === 0) {
-          const creationTime = new Date(user.metadata.creationTime);
-          
-          if (creationTime < inactiveDate) {
-            usersToDelete.push(user.uid);
-          }
+        const creationTime = new Date(user.metadata.creationTime);
+        const lastSignInTime = new Date(user.metadata.lastSignInTime);
+        
+        const isOldUnverifiedUser = user.email && !user.emailVerified && creationTime < unverifiedThreshold;
+        const isInactiveGuest = !user.email && lastSignInTime < guestInactiveThreshold;
+
+        if (isOldUnverifiedUser || isInactiveGuest) {
+          uidsToDelete.push(user.uid);
+          const reason = isOldUnverifiedUser ? "Unverified Email" : "Inactive Guest";
+          logger.log(`Marking user for deletion: ${user.uid}, Reason: ${reason}`);
         }
       });
 
-      if (usersToDelete.length > 0) {
-        const result = await admin.auth().deleteUsers(usersToDelete);
-        logger.info(`Successfully deleted ${result.successCount} inactive guest users.`);
-        logger.warn(`Failed to delete ${result.failureCount} users.`);
-        result.errors.forEach((err) => {
-          logger.error("Deletion error:", err.error.toJSON());
-        });
-      } else {
-        logger.info("No inactive guest accounts to delete.");
-      }
+      pageToken = listUsersResult.pageToken;
+
+    } while (pageToken);
+
+    if (uidsToDelete.length > 0) {
+      const result = await admin.auth().deleteUsers(uidsToDelete);
+      logger.log(`Successfully deleted ${result.successCount} users.`);
       
-    } catch (error) {
-      logger.error("Error cleaning up guest accounts:", error);
+      // [수정] error 객체에서 index를 사용해 실패한 uid를 찾습니다.
+      result.errors.forEach((error) => {
+        const failedUid = uidsToDelete[error.index];
+        logger.error(
+          `Failed to delete user: ${failedUid}, Reason: ${error.error}`
+        );
+      });
+    } else {
+      logger.log("No inactive or unverified users to delete.");
     }
-  });
+
+  } catch (error) {
+    logger.error("Error during user cleanup:", error);
+  }
+});

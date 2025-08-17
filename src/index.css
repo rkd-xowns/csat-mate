@@ -30,6 +30,10 @@
   --neumorphic-text: #555555;
   --neumorphic-shadow-light: #ffffff;
   --neumorphic-shadow-dark: #a3b1c6;
+  --color-accent-red: #dc3545;
+  --color-accent-green: #28a745;
+  --color-accent-orange: #fd7e14;
+  --color-accent-dark-orange: #E85D04;
 }
 
 /* --- 2. 화려한(Vibrant) 라이트 테마 --- */
@@ -57,6 +61,10 @@
   --neumorphic-text: #E0E0E0;
   --neumorphic-shadow-light: #525252;
   --neumorphic-shadow-dark: #2a2a2a;
+  --color-accent-red: #ff4d4d;
+  --color-accent-green: #30c255;
+  --color-accent-orange: #ff9f4c;
+  --color-accent-dark-orange: #ff7b0a;
 }
 
 /* --- 4. 화려한 다크 --- */
@@ -145,6 +153,7 @@ body {
   color: var(--text-secondary);
   font-size: 1rem;
   margin-bottom: 1rem; /* 여백 조정 */
+  word-break: keep-all;
 }
 
 /* 로그인 CSS */
@@ -182,11 +191,16 @@ body {
 }
 
 .login-input.error {
-  border-color: #ef4444; /* Tailwind의 red-500 색상입니다. */
+  border-color: var(--color-accent-red); /* Tailwind의 red-500 색상입니다. */
+}
+
+.login-input.success {
+  border-color: var(--color-accent-green);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); /* 은은한 초록색 그림자 효과 */
 }
 
 .error-message {
-  color: #ef4444; /* Tailwind CSS의 red-500 색상 (각 UI 별로 알맞은 경고 색상 추가) */ 
+  color: var(--color-accent-red); /* Tailwind CSS의 red-500 색상 (각 UI 별로 알맞은 경고 색상 추가) */ 
   font-size: 0.875rem; /* text-sm */
   text-align: center; /* text-center */
   margin-top: -0.5rem; /* -my-2 */
@@ -277,6 +291,13 @@ body {
   background-color: var(--card-background);
   color: var(--text-secondary);
   transition: all 0.2s ease-in-out;
+}
+
+.input-adjacent-button.success {
+  background-color: rgba(34, 197, 94, 0.1); /* 은은한 초록 배경 */
+  border-color: var(--color-accent-green);
+  color: var(--color-accent-green);
+  cursor: default; /* 완료 상태이므로 커서를 기본으로 변경 */
 }
 
 /* 비활성화 상태일 때 스타일 */

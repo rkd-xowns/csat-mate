@@ -16,6 +16,8 @@ import { ProtectedRoute } from './components/ProtectedRoute'; // 문지기 impor
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PwaFeatureTester } from './pages/PwaFeatureTester';
 import { AuthRedirector } from './components/AuthRedirector';
+import { ActionHandlerPage } from './pages/ActionHandlerPage';
+
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -59,6 +61,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
            <Route path="/pwa-test" element={<PwaFeatureTester />} />
            <Route path="/reset-password" element={<ResetPasswordPage />} />
+           <Route path="/action" element= {<ActionHandlerPage/>} />
 
           {/* --- 로그인해야만 접근 가능한 보호된 경로 --- */}
           <Route element={<ProtectedRoute user={user} />}>
@@ -76,3 +79,4 @@ function App() {
 }
 
 export default App;
+
