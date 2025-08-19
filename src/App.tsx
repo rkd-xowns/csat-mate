@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 
@@ -16,16 +16,20 @@ import { ProtectedRoute } from './components/ProtectedRoute'; // 문지기 impor
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PwaFeatureTester } from './pages/PwaFeatureTester';
 import { AuthRedirector } from './components/AuthRedirector';
-import { ActionHandlerPage } from './pages/ActionHandlerPage';
+import SettingsPage from './pages/csat_simulator_setting';
+import TestPage from './pages/csat_simulator';
+import type { SimulatorSettings } from './types/simulator';
 
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [signupUsername, setSignupUsername] = useState('');
   
-  // Firebase 로그인 상태를 관리할 상태
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // 첫 로딩 상태 확인
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [simulatorSettings, setSimulatorSettings] = useState<SimulatorSettings | null>(null);
+  const navigate = useNavigate();
 
   // 앱이 시작될 때 한번만 실행되어 로그인 상태를 계속 감시합니다.
   useEffect(() => {
@@ -36,6 +40,17 @@ function App() {
     // 클린업 함수: 컴포넌트가 사라질 때 감시를 중단하여 메모리 누수 방지
     return () => unsubscribe();
   }, []);
+
+  const handleStartSimulator = (settings: SimulatorSettings) => {
+    setSimulatorSettings(settings);
+    navigate('/simulator/test');
+  };
+
+  // ## [추가] 시뮬레이터 종료 핸들러 ##
+  const handleFinishSimulator = () => {
+    setSimulatorSettings(null); // 설정 초기화
+    navigate('/main'); // 메인 페이지로 이동
+  }
 
   // 첫 로딩 중에는 아무것도 보여주지 않아 화면 깜빡임을 방지
   if (isLoading) {
@@ -53,24 +68,27 @@ function App() {
         <Routes>
           <Route path="/" element={<AuthRedirector user={user} />} />
 
-          {/* --- 누구나 접근 가능한 경로 --- */}
-
           <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/login" element={<LoginPage setSignupUsername={setSignupUsername} />} />
           <Route path="/signup" element={<SignupPage setSignupUsername={setSignupUsername} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-           <Route path="/pwa-test" element={<PwaFeatureTester />} />
-           <Route path="/reset-password" element={<ResetPasswordPage />} />
-           <Route path="/action" element= {<ActionHandlerPage/>} />
+          <Route path="/pwa-test" element={<PwaFeatureTester />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          {/* --- 로그인해야만 접근 가능한 보호된 경로 --- */}
           <Route element={<ProtectedRoute user={user} />}>
             <Route 
               path="/profile-setup" 
               element={<ProfileSetupPage signupUsername={signupUsername} />} 
             />
             <Route path="/main" element={<MainPage />} />
-            {/* 나중에 추가될 다른 보호된 페이지들 (예: 마이페이지) */}
+
+            <Route path="/simulator/settings" element={<SettingsPage onStart={handleStartSimulator} />} />
+            {simulatorSettings && (
+              <Route 
+                path="/simulator/test" 
+                element={<TestPage settings={simulatorSettings} onFinish={handleFinishSimulator} />} 
+              />
+            )}
           </Route>
         </Routes>
       </PageLayout>
