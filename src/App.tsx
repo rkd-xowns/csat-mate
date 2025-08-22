@@ -18,7 +18,8 @@ import { PwaFeatureTester } from './pages/PwaFeatureTester';
 import { AuthRedirector } from './components/AuthRedirector';
 import SettingsPage from './pages/csat_simulator_setting';
 import TestPage from './pages/csat_simulator';
-import type { SimulatorSettings } from './types/simulator';
+import ReportPage from './pages/ReportPage';
+import type { SimulatorSettings, FinishData } from './types/simulator';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [finishData, setFinishData] = useState<FinishData | null>(null);
 
   const [simulatorSettings, setSimulatorSettings] = useState<SimulatorSettings | null>(null);
   const navigate = useNavigate();
@@ -47,9 +49,10 @@ function App() {
   };
 
   // ## [추가] 시뮬레이터 종료 핸들러 ##
-  const handleFinishSimulator = () => {
-    setSimulatorSettings(null); // 설정 초기화
-    navigate('/main'); // 메인 페이지로 이동
+  const handleFinishSimulator = (result: FinishData) => {
+    setSimulatorSettings(null); // 기존 설정 초기화
+    setFinishData(result);      // 결과 데이터 저장
+    navigate('/simulator/report'); // 보고서 페이지로 이동
   }
 
   // 첫 로딩 중에는 아무것도 보여주지 않아 화면 깜빡임을 방지
@@ -89,6 +92,10 @@ function App() {
                 element={<TestPage settings={simulatorSettings} onFinish={handleFinishSimulator} />} 
               />
             )}
+            <Route 
+              path="/simulator/report"
+              element={<ReportPage result={finishData} />}
+            />
           </Route>
         </Routes>
       </PageLayout>

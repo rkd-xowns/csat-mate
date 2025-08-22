@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { TestBlock } from '../../data/schedule';
 import type { Lap } from '../../types/simulator';
 
-// Props 인터페이스는 기존 형식을 그대로 유지합니다.
+// Props 인터페이스
 interface InfoSliderProps {
     block: TestBlock;
     remainingSeconds: number;
@@ -14,14 +14,14 @@ interface InfoSliderProps {
     isWarningTime: boolean;
     onLapClick: () => void;
     isCustomizing: boolean;
-    slideConfig: any; // { slide0: string, slide1: string, ... }
-    setSlideConfig: (config: any) => void;
+    slideConfig: Record<string, string>; // 타입을 명확히 지정
+    setSlideConfig: (config: Record<string, string>) => void;
     tempLapInfo: { lapNumber: number; lapTime: number } | null;
     manualVirtualTime: string | null;
     setManualVirtualTime: (time: string | null) => void;
 }
 
-// JSX 파일의 formatTime 함수가 더 유연하므로 가져옵니다.
+// formatTime 함수
 const formatTime = (totalSeconds: number): string => {
   if (totalSeconds < 0) totalSeconds = 0;
   const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
@@ -30,10 +30,20 @@ const formatTime = (totalSeconds: number): string => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
-// --- Helper Components (JSX 파일의 구조를 TS로 변환) ---
+// 커스텀 정보 표시 컴포넌트
+interface CustomInfoDisplayProps {
+    slot: string;
+    block: TestBlock;
+    remainingSeconds: number;
+    virtualTime: string;
+    stopwatch: number;
+    currentLapTimes: Lap[];
+    manualVirtualTime: string | null;
+}
 
-// 1. 커스텀 정보 표시를 위한 작은 컴포넌트
-const CustomInfoDisplay: React.FC<any> = ({ slot, block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, manualVirtualTime }) => {
+const CustomInfoDisplay: React.FC<CustomInfoDisplayProps> = ({ 
+    slot, block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, manualVirtualTime 
+}) => {
     let title = '', value = '';
     if (slot === 'blockName') {
         title = '교시 정보';
@@ -63,16 +73,32 @@ const CustomInfoDisplay: React.FC<any> = ({ slot, block, remainingSeconds, virtu
     );
 };
 
-// 2. 각 슬라이드의 내용을 렌더링하는 컴포넌트
-const SlideContent: React.FC<any> = ({ index, block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, isWarningTime, getBlockClass, manualVirtualTime, setManualVirtualTime }) => {
+// 슬라이드 내용 컴포넌트
+interface SlideContentProps {
+    index: number;
+    block: TestBlock;
+    remainingSeconds: number;
+    virtualTime: string;
+    stopwatch: number;
+    currentLapTimes: Lap[];
+    isWarningTime: boolean;
+    getBlockClass: (type: string) => string;
+    manualVirtualTime: string | null;
+    setManualVirtualTime: (time: string | null) => void;
+}
+
+const SlideContent: React.FC<SlideContentProps> = ({ 
+    index, block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, 
+    isWarningTime, getBlockClass, manualVirtualTime, setManualVirtualTime 
+}) => {
     
     const handleCurrentTimeClick = (e: React.MouseEvent) => {
-        e.stopPropagation(); // 부모의 onLapClick 이벤트 방지
+        e.stopPropagation();
         if (manualVirtualTime) {
-            setManualVirtualTime(null); // 다시 원래 수능 시간으로 복귀
+            setManualVirtualTime(null);
         } else {
             const now = new Date().toTimeString().split(' ')[0];
-            setManualVirtualTime(now); // 현재 시간으로 설정
+            setManualVirtualTime(now);
         }
     };
 
@@ -123,8 +149,7 @@ const SlideContent: React.FC<any> = ({ index, block, remainingSeconds, virtualTi
     }
 };
 
-// --- Main Component ---
-
+// 메인 컴포넌트
 const InfoSlider: React.FC<InfoSliderProps> = ({
     block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, isWarningTime, onLapClick,
     isCustomizing, slideConfig, setSlideConfig, tempLapInfo, manualVirtualTime, setManualVirtualTime
@@ -149,7 +174,7 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
         }
     }, [currentSlide]);
 
-    // --- Touch Event Handlers for Swiping ---
+    // Touch Event Handlers
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
         touchStartRef.current = e.touches[0].clientX;
@@ -172,7 +197,7 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
 
         if (diff < -threshold) moveSlide(1);
         else if (diff > threshold) moveSlide(-1);
-        else { // 원래 위치로 복귀
+        else {
             if (sliderRef.current) {
                 const viewportWidth = sliderRef.current.parentElement!.offsetWidth;
                 sliderRef.current.style.transition = 'transform 0.4s ease-in-out';
@@ -181,7 +206,7 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
         }
     };
     
-    // 텍스트 색상 변경을 위한 클래스 반환 함수
+    // 텍스트 색상 변경을 위한 클래스 반환 함수 (isWarningTime 사용)
     const getBlockClass = (type: string): string => {
         if (isWarningTime) return 'warning-text';
         if (type === 'break' || type === 'lunch') return 'break-text';
@@ -202,7 +227,15 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
         <div className="slider-container">
             {/* 상단 오버레이 정보 */}
             <div className="custom-info-overlay">
-                <CustomInfoDisplay slot={slideConfig[`slide${currentSlide}`]} {...{block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, manualVirtualTime}} />
+                <CustomInfoDisplay 
+                    slot={slideConfig[`slide${currentSlide}`]} 
+                    block={block}
+                    remainingSeconds={remainingSeconds}
+                    virtualTime={virtualTime}
+                    stopwatch={stopwatch}
+                    currentLapTimes={currentLapTimes}
+                    manualVirtualTime={manualVirtualTime}
+                />
             </div>
 
             {/* 메인 슬라이더 */}
@@ -219,7 +252,14 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
                            <SlideContent 
                                index={index} 
                                getBlockClass={getBlockClass} 
-                               {...{block, remainingSeconds, virtualTime, stopwatch, currentLapTimes, isWarningTime, manualVirtualTime, setManualVirtualTime, tempLapInfo}} 
+                               block={block}
+                               remainingSeconds={remainingSeconds}
+                               virtualTime={virtualTime}
+                               stopwatch={stopwatch}
+                               currentLapTimes={currentLapTimes}
+                               isWarningTime={isWarningTime}
+                               manualVirtualTime={manualVirtualTime}
+                               setManualVirtualTime={setManualVirtualTime}
                            />
                         </div>
                     ))}
@@ -253,8 +293,16 @@ const InfoSlider: React.FC<InfoSliderProps> = ({
             {isCustomizing && (
                 <div className="customization-menu">
                     <label>현재 슬라이드 정보:</label>
-                    <select value={slideConfig[`slide${currentSlide}`]} onChange={e => setSlideConfig((prev: any) => ({...prev, [`slide${currentSlide}`]: e.target.value}))}>
-                        {slideOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    <select 
+                        value={slideConfig[`slide${currentSlide}`]} 
+                        onChange={e => setSlideConfig({
+                            ...slideConfig, 
+                            [`slide${currentSlide}`]: e.target.value
+                        })}
+                    >
+                        {slideOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                 </div>
             )}

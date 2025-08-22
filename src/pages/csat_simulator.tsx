@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import InfoSlider from '../components/sat_simulator/InfoSlider';
 import SimulationLoader from '../components/sat_simulator/SimulationLoader';
 import MuteButton from '../components/sat_simulator/MuteButton';
+import { useWhiteNoise } from '../contexts/WhiteNoiseContext';
 import { buildTestQueue } from '../data/schedule';
 import type { TestBlock } from '../data/schedule';
 import type { SimulatorSettings, LapData, Lap, FinishData } from '../types/simulator';
@@ -72,6 +73,9 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
     const testQueue = useMemo(() => buildTestQueue(settings), [settings]);
     const initialIndex = useMemo(() => settings.startMode === 'real-time' ? findNextUpcomingBlockIndex(testQueue) : 0, [testQueue, settings.startMode]);
 
+    // 화이트노이즈 훅 사용
+    const { pauseForListening, resumeAfterListening } = useWhiteNoise();
+
     const [simState, setSimState] = useState<'PREPARING' | 'WAITING' | 'RUNNING' | 'FINISHED'>('PREPARING'); 
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [currentBlock, setCurrentBlock] = useState<TestBlock | null>(null);
@@ -81,6 +85,7 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
     const blockEndTimeRef = useRef<number | null>(null);
     const wakeLockRef = useRef<WakeLockSentinel | null>(null);
     const listeningFilePlayedRef = useRef(false);
+    const isListeningPlayingRef = useRef(false); // 영어 듣기 재생 상태 추적
 
     const [waitingMessage, setWaitingMessage] = useState("시뮬레이션을 준비 중입니다...");
     const [timeOffset, setTimeOffset] = useState<number | null>(null);
@@ -99,12 +104,12 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
     const [manualVirtualTime, setManualVirtualTime] = useState<string | null>(null);
     const [tempLapInfo, setTempLapInfo] = useState<{lapNumber: number, lapTime: number} | null>(null);
     
-    // ## [수정] 오디오 재생 로직을 제거하고 상태 설정에만 집중 ##
     const startBlock = useCallback((block: TestBlock) => {
         if (!block) return;
         
         blockEndTimeRef.current = Date.now() + block.duration * 1000;
         listeningFilePlayedRef.current = false;
+        isListeningPlayingRef.current = false;
         
         setCurrentBlock(block);
         setRemainingSeconds(block.duration);
@@ -124,6 +129,12 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
     const finishBlock = useCallback(() => {
         const nextIndex = currentIndex + 1;
         
+        // 영어 듣기가 끝났을 때 화이트노이즈 재개
+        if (isListeningPlayingRef.current) {
+            resumeAfterListening();
+            isListeningPlayingRef.current = false;
+        }
+        
         setLapData(prev => {
             if (!currentBlock || !currentBlock.isExam) return prev;
             const finalLaps = [...currentLapTimes, { lap: stopwatch, time: virtualTime }].filter(item => item.lap > 0);
@@ -140,7 +151,7 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
                 setSimState('WAITING');
             }
         }
-    }, [currentIndex, currentBlock, currentLapTimes, stopwatch, virtualTime, testQueue, settings.startMode, startBlock]);
+    }, [currentIndex, currentBlock, currentLapTimes, stopwatch, virtualTime, testQueue, settings.startMode, startBlock, resumeAfterListening]);
     
     useEffect(() => {
         if ('Notification' in window && Notification.permission !== 'granted') {
@@ -171,6 +182,7 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
 
     useEffect(() => {
         if (simState === 'FINISHED') {
+            console.log("✅ TestPage: 시뮬레이션 종료! onFinish를 호출합니다.", { data: lapData, status: 'completed' });
             onFinish({ data: lapData, status: 'completed' });
             return;
         }
@@ -186,10 +198,8 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
             return;
         }
 
-        // ## [수정] 모든 오디오 로직을 타이머 내부에서 처리 ##
         const intervalId = setInterval(() => {
             if (simState === 'WAITING') {
-                // ... (대기 로직은 동일)
                 if (currentIndex === -1) {
                     setSimState('FINISHED');
                     return;
@@ -212,6 +222,9 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
                 if (newRemaining === currentBlock.duration && !isMuted) {
                     const { key, type } = currentBlock;
                     if (key === 'english' && settings.listeningFile && !settings.includeBells) {
+                        // 영어 듣기 시작 시 화이트노이즈 일시정지
+                        pauseForListening();
+                        isListeningPlayingRef.current = true;
                         playAudio(settings.listeningFile);
                     } else if (key === 'english_prepare') playAudio(englishPrepareSound);
                     else if (type === 'bell') playAudio(preliminarySound);
@@ -223,6 +236,9 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
                 
                 // 듣기 파일 재생 (준비령 ON + 남은 시간 180초)
                 if (currentBlock.key === 'english_prepare' && newRemaining <= 180 && settings.listeningFile && !listeningFilePlayedRef.current) {
+                    // 영어 듣기 시작 시 화이트노이즈 일시정지
+                    pauseForListening();
+                    isListeningPlayingRef.current = true;
                     if (!isMuted) playAudio(settings.listeningFile);
                     listeningFilePlayedRef.current = true;
                 }
@@ -252,7 +268,7 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
         }, 1000);
 
         return () => clearInterval(intervalId);
-    }, [simState, currentIndex, timeOffset, isMuted, isWarningTime, lapData, onFinish, startBlock, finishBlock, testQueue, currentBlock, settings]);
+    }, [simState, currentIndex, timeOffset, isMuted, isWarningTime, lapData, onFinish, startBlock, finishBlock, testQueue, currentBlock, settings, pauseForListening]);
     
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -275,6 +291,13 @@ const TestPage: React.FC<TestPageProps> = ({ settings, onFinish }) => {
     const handleAbort = () => {
         if (window.confirm("정말로 시뮬레이션을 중단하시겠습니까?")) {
             stopAudio();
+            
+            // 영어 듣기 중이었다면 화이트노이즈 재개
+            if (isListeningPlayingRef.current) {
+                resumeAfterListening();
+                isListeningPlayingRef.current = false;
+            }
+            
             let finalData = lapData;
             if (currentBlock && currentBlock.isExam) {
                 const finalLaps = [...currentLapTimes, { lap: stopwatch, time: virtualTime }].filter(item => item.lap > 0);
